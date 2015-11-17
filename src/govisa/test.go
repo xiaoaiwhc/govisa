@@ -3,51 +3,111 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"govisa/visa"
+	"io"
+	"os"
+	"strings"
+	"time"
 )
 
-var port = flag.Int("port", 1, "GPIB port number")
-var cmd = flag.String("cmd", "*IDN?", "VISA command")
+var board_id = flag.Uint("id", 0, "The Board ID")
+var board_port = flag.Uint("port", 1, "GPIB port number")
+var visa_cmd = flag.String("cmd", "*IDN?", "VISA command")
+var file_path = flag.String("path", "", "The file path that includes GPIB commands.")
 
-func main() {
+func skipLine(str string) bool {
+	//blank line
+	if len(str) == 0 {
+		return true
+	}
+	//comment
+	return strings.HasPrefix(str, "//")
+}
 
-	flag.Parse()
+func trimStr(buf []byte) string {
+	return strings.TrimSpace(string(visa.TrimByteSlice(buf)))
+}
 
+func getCmdFromFile(filePath string) (buf []string) {
+	fi, err := os.Open(filePath)
+	if err != nil {
+		panic(err)
+	}
+	defer fi.Close()
+
+	br := bufio.NewReader(fi)
+	for {
+		line, err := br.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+
+		line = strings.TrimSpace(line)
+		if skipLine(line) {
+			continue
+		}
+
+		buf = append(buf, line)
+	}
+
+	return
+}
+
+func executeCmd(addr string, cmd []string) {
 	var (
 		defaultRM uint32
 		instr     uint32
+
+		retCnt uint32
+
+		resp []byte
 	)
 
-	status := visa.ViOpenDefaultRM(&defaultRM)
+	resp = make([]byte, 1024)
 
-	addr := fmt.Sprintf("GPIB1::%d::INSTR", *port)
-	fmt.Printf("%s\n", addr)
+	visa.ViOpenDefaultRM(&defaultRM)
 	visa.ViOpen(defaultRM, addr, uint32(0), uint32(0), &instr)
 	defer visa.ViClose(instr)
 
-	visa.ViSetAttribute(instr, visa.VI_ATTR_TMO_VALUE, 5000)
+	for _, line := range cmd {
+		c := strings.SplitN(line, ",", 2)
+		c[1] = c[1] + "\n"
+		switch c[0] {
+		case "W":
+			visa.ViWrite(instr, c[1], uint32(len(c[1])), &retCnt)
+			fmt.Printf(">> %s", c[1])
+		case "R":
+			visa.ViRead(instr, resp, uint32(len(resp)), &retCnt)
+			fmt.Printf("<< %s\n", trimStr(resp))
+		case "Q":
+//			fmt.Printf(">> %s", c[1])
+//			result := new(string)
+//			visa.ViQueryf(instr, c[1], "%s\n", result)
+//			fmt.Printf("<< %s", *result)
 
-	var (
-		instrHandle uint32
-		numInstrs   uint32
-	)
-
-	buf := make([]byte, 1024)
-	visa.ViFindRsrc(defaultRM, "GPIB1::?*", &instrHandle, &numInstrs, buf)
-	fmt.Printf("%v, %v, %s\n", instrHandle, numInstrs, visa.TrimByteSlice(buf))
-
-	cmd_s := fmt.Sprintf("%s\n", *cmd)
-	fmt.Printf("cmd: %s, len: %d\n", cmd_s, len(cmd_s))
-	var retCnt uint32
-	if status := visa.ViWrite(instr, cmd_s, uint32(len(cmd_s)), &retCnt); int(status) < visa.VI_SUCCESS {
-		panic("Failed to write data to instrument.")
+			visa.ViWrite(instr, c[1], uint32(len(c[1])), &retCnt)
+			fmt.Printf(">> %s", c[1])
+			time.Sleep(500 * time.Millisecond)
+			visa.ViRead(instr, resp, uint32(len(resp)), &retCnt)
+			fmt.Printf("<< %s\n", trimStr(resp))
+		default:
+			fmt.Printf("unknow command: %s\n", line)
+		}
 	}
+}
+	
+func main() {
+	flag.Parse()
 
-	if status := visa.ViRead(instr, buf, uint32(len(buf)), &retCnt); int(status) < visa.VI_SUCCESS {
-		panic("Failed to read data from instrument.")
-	}
-	fmt.Printf("%s\n", visa.TrimByteSlice(buf))
+	gpibCmd := getCmdFromFile(*file_path)
+	
+	addr := fmt.Sprintf("GPIB%d::%d::INSTR", *board_id, *board_port)
 
+	executeCmd(addr, gpibCmd)
 }

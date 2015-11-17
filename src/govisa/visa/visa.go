@@ -1008,7 +1008,7 @@ func ViPoke8(vi uint32, address unsafe.Pointer, val8 uint8) {
 }
 
 func ViPrintf(vi uint32, writeFmt string, args ...interface{}) int32 {
-	str := fmt.Sprintf(string(writeFmt), args)
+	str := fmt.Sprintf(writeFmt, args...)
 	ret, _, _ := procViPrintf.Call(uintptr(vi),
 		strPtr("%s"),
 		strPtr(str))
@@ -1030,14 +1030,21 @@ func ViPxiReserveTriggers(vi uint32, cnt int16, trigBuses, trigLines, failureInd
 	return int32(ret)
 }
 
-func ViQueryf(vi uint32, cmd string, readFmt string, args ...interface{}) int32 {
-	str := fmt.Sprintf(string(readFmt), args)
+func ViQueryf(vi uint32, cmd string, go_readFmt string, args ...interface{}) int32 {
+	buf := make([]byte, 1024)
 	ret, _, _ := procViQueryf.Call(uintptr(vi),
 		strPtr(cmd),
-		strPtr("%s"),
-		strPtr(str))		
+		strPtr("%t"),
+		slicePtr(buf))		
 	if int32(ret) < VI_SUCCESS {
 		abort("ViQueryf", uint(ret))
+	}
+	fmt.Println("test", string(TrimByteSlice(buf)))
+	fmt.Printf("%T, %v\n", string(TrimByteSlice(buf)), string(TrimByteSlice(buf)))
+	num, err := fmt.Sscanf(string(TrimByteSlice(buf)), go_readFmt, args...)
+	fmt.Println(num)
+	if err != nil {
+		panic("ViQueryf failed. Error Msg: " + err.Error())
 	}
 	return int32(ret)
 }
@@ -1104,7 +1111,7 @@ func ViSPrintf(vi uint32, buf *string, writeFmt string, args ...interface{}) int
 func ViSScanf(vi uint32, buf *string, readFmt string, args ...interface{}) int32 {
 	// Don't use the vi
 	_ = vi
-	ret, err := fmt.Sscanf(*buf, readFmt, args)
+	ret, err := fmt.Sscanf(*buf, readFmt, args...)
 	if err != nil {
 		panic("ViSScanf Failed. Error Msg: " + err.Error())
 	}
@@ -1112,15 +1119,15 @@ func ViSScanf(vi uint32, buf *string, readFmt string, args ...interface{}) int32
 }
 
 func ViScanf(vi uint32, readFmt string, args ...interface{}) int32 {
-	var str = new(string)
+	buf := make([]byte, 1024)
 	ret, _, _ := procViScanf.Call(uintptr(vi),
-		strPtr("%s"),
-		strPtr(*str))
+		strPtr("%t"),
+		slicePtr(buf))
 	if int32(ret) < VI_SUCCESS {
 		abort("ViScanf", uint(ret))
 	}
 	
-	_, err := fmt.Sscanf(*str, readFmt, args)
+	_, err := fmt.Sscanf(string(TrimByteSlice(buf)), readFmt, args...)
 	if err != nil {
 		panic("ViScanf failed. Error Msg: " + err.Error())
 	}
