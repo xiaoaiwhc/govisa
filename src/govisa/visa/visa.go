@@ -119,6 +119,11 @@ var (
 	procViWriteFromFile      = visa32.NewProc("viWriteFromFile")
 )
 
+type Visa struct {
+	defaultRM uint32
+	vi uint32
+}
+
 func TrimByteSlice(b []byte) []byte {
 	pos := func(c byte) int {
 		for p, v := range b {
@@ -173,6 +178,10 @@ func abort(funcname string, _errCode uint) {
 	}
 }
 
+func (v *Visa)ViAssertIntrSignal(mode int16, statusID uint32) int32 {
+	return ViAssertIntrSignal(v.vi, mode, statusID)
+}
+
 func ViAssertIntrSignal(vi uint32, mode int16, statusID uint32) int32 {
 	ret, _, _ := procViAssertIntrSignal.Call(uintptr(vi),
 		intPtr(mode),
@@ -183,6 +192,10 @@ func ViAssertIntrSignal(vi uint32, mode int16, statusID uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViAssertTrigger(protocol int16) int32 {
+	return ViAssertTrigger(v.vi, protocol)
+}
+
 func ViAssertTrigger(vi uint32, protocol int16) int32 {
 	ret, _, _ := procViAssertTrigger.Call(uintptr(vi), uintptr(protocol))
 	if int32(ret) < VI_SUCCESS {
@@ -191,12 +204,20 @@ func ViAssertTrigger(vi uint32, protocol int16) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViAssertUtilSignal(line int16) int32 {
+	return ViAssertUtilSignal(v.vi, line)
+}
+
 func ViAssertUtilSignal(vi uint32, line int16) int32 {
 	ret, _, _ := procViAssertUtilSignal.Call(uintptr(vi), uintptr(line))
 	if int32(ret) < VI_SUCCESS {
 		abort("viAssertUtilSignal", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViBufRead(buf []byte, cnt uint32, retCnt *uint32) int32 {
+	return ViBufRead(v.vi, buf, cnt, retCnt)
 }
 
 func ViBufRead(vi uint32, buf []byte, cnt uint32, retCnt *uint32) int32 {
@@ -210,6 +231,10 @@ func ViBufRead(vi uint32, buf []byte, cnt uint32, retCnt *uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViBufWrite(buf []byte, cnt uint32, retCnt *uint32) int32 {
+	return ViBufWrite(v.vi, buf, cnt, retCnt)
+}
+
 func ViBufWrite(vi uint32, buf []byte, cnt uint32, retCnt *uint32) int32 {
 	ret, _, _ := procViBufWrite.Call(uintptr(vi),
 		slicePtr(buf),
@@ -221,6 +246,10 @@ func ViBufWrite(vi uint32, buf []byte, cnt uint32, retCnt *uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViClear() int32 {
+	return ViClear(v.vi)
+}
+
 func ViClear(vi uint32) int32 {
 	ret, _, _ := procViClear.Call(uintptr(vi))
 	if int32(ret) < VI_SUCCESS {
@@ -229,12 +258,20 @@ func ViClear(vi uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViClose() int32 {
+	return ViClose(v.vi)
+}
+
 func ViClose(vi uint32) int32 {
 	ret, _, _ := procViClose.Call(uintptr(vi))
 	if int32(ret) < VI_SUCCESS {
 		abort("viClose", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViDisableEvent(eventType uint32, mechanism uint16) int32 {
+	return ViDisableEvent(v.vi, eventType, mechanism)
 }
 
 func ViDisableEvent(vi uint32, eventType uint32, mechanism uint16) int32 {
@@ -247,6 +284,10 @@ func ViDisableEvent(vi uint32, eventType uint32, mechanism uint16) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViDiscardEvents(eventType uint32, mechanism uint16) int32 {
+	return ViDiscardEvents(v.vi, eventType, mechanism)
+}
+
 func ViDiscardEvents(vi uint32, eventType uint32, mechanism uint16) int32 {
 	ret, _, _ := procViDiscardEvents.Call(uintptr(vi),
 		uintptr(eventType),
@@ -255,6 +296,10 @@ func ViDiscardEvents(vi uint32, eventType uint32, mechanism uint16) int32 {
 		abort("viDiscardEvents", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViEnableEvent(eventType uint32, mechanism uint16, context uint32) int32 {
+	return ViEnableEvent(v.vi, eventType, mechanism, context)
 }
 
 func ViEnableEvent(vi uint32, eventType uint32, mechanism uint16, context uint32) int32 {
@@ -268,12 +313,20 @@ func ViEnableEvent(vi uint32, eventType uint32, mechanism uint16, context uint32
 	return int32(ret)
 }
 
+func (v *Visa)ViFindNext(desc string) int32 {
+	return ViFindNext(v.vi, desc)
+}
+
 func ViFindNext(vi uint32, desc string) int32 {
 	ret, _, _ := procViFindNext.Call(uintptr(vi), strPtr(desc))
 	if int32(ret) < VI_SUCCESS {
 		abort("viFindNext", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViFindRsrc(sesn uint32, expr string, retCnt *uint32, desc []byte) int32 {
+	return ViFindRsrc(sesn, expr, &v.vi, retCnt, desc) 
 }
 
 func ViFindRsrc(sesn uint32, expr string, vi *uint32, retCnt *uint32, desc []byte) int32 {
@@ -289,12 +342,20 @@ func ViFindRsrc(sesn uint32, expr string, vi *uint32, retCnt *uint32, desc []byt
 	return int32(ret)
 }
 
+func (v *Visa)ViFlush(vi uint32, mask uint16) int32 {
+	return ViFlush(v.vi, mask)
+}
+
 func ViFlush(vi uint32, mask uint16) int32 {
 	ret, _, _ := procViFlush.Call(uintptr(vi), uintptr(mask))
 	if int32(ret) < VI_SUCCESS {
 		abort("viFlush", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViGetAttribute(attrName uint32, attrValue unsafe.Pointer) int32 {
+	return ViGetAttribute(v.vi, attrName, attrValue)
 }
 
 func ViGetAttribute(vi uint32, attrName uint32, attrValue unsafe.Pointer) int32 {
@@ -305,8 +366,16 @@ func ViGetAttribute(vi uint32, attrName uint32, attrValue unsafe.Pointer) int32 
 	return int32(ret)
 }
 
+func (v *Visa)ViGetDefaultRM() int32 {
+	return ViGetDefaultRM(&v.vi)
+}
+
 func ViGetDefaultRM(vi *uint32) int32 {
 	return ViOpenDefaultRM(vi)
+}
+
+func (v *Visa)ViGpibCommand(cmd string, cnt uint32, retCnt *uint32) int32 {
+	return ViGpibCommand(v.vi, cmd, cnt, retCnt)
 }
 
 func ViGpibCommand(vi uint32, cmd string, cnt uint32, retCnt *uint32) int32 {
@@ -320,6 +389,10 @@ func ViGpibCommand(vi uint32, cmd string, cnt uint32, retCnt *uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViGpibControlATN(mode uint16) int32 {
+	return ViGpibControlATN(v.vi, mode)
+}
+
 func ViGpibControlATN(vi uint32, mode uint16) int32 {
 	ret, _, _ := procViGpibControlATN.Call(uintptr(vi),
 		uintptr(mode))
@@ -329,6 +402,10 @@ func ViGpibControlATN(vi uint32, mode uint16) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViGpibControlREN(mode uint16) int32 {
+	return ViGpibControlREN(v.vi, mode)
+}
+
 func ViGpibControlREN(vi uint32, mode uint16) int32 {
 	ret, _, _ := procViGpibControlREN.Call(uintptr(vi),
 		uintptr(mode))
@@ -336,6 +413,10 @@ func ViGpibControlREN(vi uint32, mode uint16) int32 {
 		abort("ViGpibControlREN", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViGpibPassControl(primAddr, secAddr uint16) int32 {
+	return ViGpibPassControl(v.vi, primAddr, secAddr)
 }
 
 func ViGpibPassControl(vi uint32, primAddr, secAddr uint16) int32 {
@@ -348,12 +429,20 @@ func ViGpibPassControl(vi uint32, primAddr, secAddr uint16) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViGpibSendIFC() int32 {
+	return ViGpibSendIFC(v.vi)
+}
+
 func ViGpibSendIFC(vi uint32) int32 {
 	ret, _, _ := procViGpibSendIFC.Call(uintptr(vi))
 	if int32(ret) < VI_SUCCESS {
 		abort("ViGpibSendIFC", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViIn16(space uint16, offset uint, val16 *uint16) int32 {
+	return ViIn16(v.vi, space, offset, val16)
 }
 
 func ViIn16(vi uint32, space uint16, offset uint, val16 *uint16) int32 {
@@ -367,6 +456,10 @@ func ViIn16(vi uint32, space uint16, offset uint, val16 *uint16) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViIn16Ex(space uint16, offset uint64, val16 *uint16) int32 {
+	return ViIn16Ex(v.vi, space, offset, val16)
+}
+
 func ViIn16Ex(vi uint32, space uint16, offset uint64, val16 *uint16) int32 {
 	ret, _, _ := procViIn16Ex.Call(uintptr(vi), 
 		uintptr(space), 
@@ -376,6 +469,10 @@ func ViIn16Ex(vi uint32, space uint16, offset uint64, val16 *uint16) int32 {
 		abort("ViIn16Ex", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViIn32(space uint16, offset uint, val32 *uint32) int32 {
+	return ViIn32(v.vi, space, offset, val32)
 }
 
 func ViIn32(vi uint32, space uint16, offset uint, val32 *uint32) int32 {
@@ -389,6 +486,10 @@ func ViIn32(vi uint32, space uint16, offset uint, val32 *uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViIn32Ex(space uint16, offset uint64, val32 *uint32) int32 {
+	return ViIn32Ex(v.vi, space, offset, val32)
+}
+
 func ViIn32Ex(vi uint32, space uint16, offset uint64, val32 *uint32) int32 {
 	ret, _, _ := procViIn32Ex.Call(uintptr(vi), 
 		uintptr(space), 
@@ -398,6 +499,10 @@ func ViIn32Ex(vi uint32, space uint16, offset uint64, val32 *uint32) int32 {
 		abort("ViIn32Ex", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViIn64(space uint16, offset uint, val64 *uint64) int32 {
+	return ViIn64(v.vi, space, offset, val64)
 }
 
 func ViIn64(vi uint32, space uint16, offset uint, val64 *uint64) int32 {
@@ -411,6 +516,10 @@ func ViIn64(vi uint32, space uint16, offset uint, val64 *uint64) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViIn64Ex(space uint16, offset uint64, val64 *uint64) int32 {
+	return ViIn64Ex(v.vi, space, offset, val64)
+}
+
 func ViIn64Ex(vi uint32, space uint16, offset uint64, val64 *uint64) int32 {
 	ret, _, _ := procViIn64Ex.Call(uintptr(vi), 
 		uintptr(space), 
@@ -420,6 +529,10 @@ func ViIn64Ex(vi uint32, space uint16, offset uint64, val64 *uint64) int32 {
 		abort("ViIn64Ex", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViIn8(space uint16, offset uint, val8 *uint8) int32 {
+	return ViIn8(v.vi, space, offset, val8)
 }
 
 func ViIn8(vi uint32, space uint16, offset uint, val8 *uint8) int32 {
@@ -433,6 +546,10 @@ func ViIn8(vi uint32, space uint16, offset uint, val8 *uint8) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViIn8Ex(space uint16, offset uint64, val8 *uint8) int32 {
+	return ViIn8Ex(v.vi, space, offset, val8)
+}
+
 func ViIn8Ex(vi uint32, space uint16, offset uint64, val8 *uint8) int32 {
 	ret, _, _ := procViIn8Ex.Call(uintptr(vi), 
 		uintptr(space), 
@@ -442,6 +559,10 @@ func ViIn8Ex(vi uint32, space uint16, offset uint64, val8 *uint8) int32 {
 		abort("ViIn8Ex", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViInstallHandler(eventType uint32, handler *int32, userHandle unsafe.Pointer) int32 {
+	return ViInstallHandler(v.vi, eventType, handler, userHandle)
 }
 
 func ViInstallHandler(vi, eventType uint32, handler *int32, userHandle unsafe.Pointer) int32 {
@@ -455,6 +576,10 @@ func ViInstallHandler(vi, eventType uint32, handler *int32, userHandle unsafe.Po
 	return int32(ret)
 }
 
+func (v *Visa)ViLock(lockType, timeout uint32, requestedKey string, accessKey []byte) int32 {
+	return ViLock(v.vi, lockType, timeout, requestedKey, accessKey)
+}
+
 func ViLock(vi, lockType, timeout uint32, requestedKey string, accessKey []byte) int32 {
 	ret, _, _ := procViLock.Call(uintptr(vi), 
 		uintptr(lockType), 
@@ -466,6 +591,11 @@ func ViLock(vi, lockType, timeout uint32, requestedKey string, accessKey []byte)
 	}
 	return int32(ret)
 }
+
+func (v *Visa)ViMapAddress(mapSpace uint16, mapOffset, mapSize uint, 
+	access uint16, suggested, address unsafe.Pointer) int32 {
+		return ViMapAddress(v.vi, mapSpace, mapOffset, mapSize, access, suggested, address)
+	}
 
 func ViMapAddress(vi uint32, mapSpace uint16, mapOffset, 
 	mapSize uint, access uint16, suggested, address unsafe.Pointer) int32 {
@@ -483,6 +613,11 @@ func ViMapAddress(vi uint32, mapSpace uint16, mapOffset,
 		
 }
 
+func (v *Visa)ViMapAddressEx(mapSpace uint16, mapOffset uint64, mapSize uint, 
+	access uint16, suggested, address unsafe.Pointer) int32 {
+		return ViMapAddressEx(v.vi, mapSpace, mapOffset, mapSize, access, suggested, address)
+	}
+	
 func ViMapAddressEx(vi uint32, mapSpace uint16, mapOffset uint64,
 	mapSize uint, access uint16, suggested, address unsafe.Pointer) int32 {
 		ret, _, _ := procViMapAddressEx.Call(uintptr(vi), 
@@ -498,6 +633,10 @@ func ViMapAddressEx(vi uint32, mapSpace uint16, mapOffset uint64,
 	return int32(ret)
 }
 
+func (v *Visa)ViMapTrigger(trigSrc, trigDest int16, mode uint16) int32 {
+	return ViMapTrigger(v.vi, trigSrc, trigDest, mode)
+}
+
 func ViMapTrigger(vi uint32, trigSrc, trigDest int16, mode uint16) int32 {
 	ret, _, _ := procViMapTrigger.Call(uintptr(vi), 
 		uintptr(trigSrc), 
@@ -507,6 +646,10 @@ func ViMapTrigger(vi uint32, trigSrc, trigDest int16, mode uint16) int32 {
 		abort("ViMapTrigger", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMemAlloc(size uint, offset *uint) int32 {
+	return ViMemAlloc(v.vi, size, offset)
 }
 
 func ViMemAlloc(vi uint32, size uint, offset *uint) int32 {
@@ -519,6 +662,10 @@ func ViMemAlloc(vi uint32, size uint, offset *uint) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViMemAllocEx(size uint, offset *uint64) int32 {
+	return ViMemAllocEx(v.vi, size, offset)
+}
+
 func ViMemAllocEx(vi uint32, size uint, offset *uint64) int32 {
 	ret, _, _ := procViMemAllocEx.Call(uintptr(vi), 
 		uintptr(size), 
@@ -527,6 +674,10 @@ func ViMemAllocEx(vi uint32, size uint, offset *uint64) int32 {
 		abort("ViMemAllocEx", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMemFree(offset *uint) int32 {
+	return ViMemFree(v.vi, offset)
 }
 
 func ViMemFree(vi uint32, offset *uint) int32 {
@@ -538,6 +689,10 @@ func ViMemFree(vi uint32, offset *uint) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViMemFreeEx(offset *uint64) int32 {
+	return ViMemFreeEx(v.vi, offset)
+}
+
 func ViMemFreeEx(vi uint32, offset *uint64) int32 {
 	ret, _, _ := procViMemFreeEx.Call(uintptr(vi), 
 		intPtr(offset))
@@ -546,6 +701,12 @@ func ViMemFreeEx(vi uint32, offset *uint64) int32 {
 	}
 	return int32(ret)
 }
+
+func (v *Visa)ViMove(srcSpace uint16, srcOffset uint, srcWidth, destSpace uint16,
+    destOffset uint64, destWidth uint16, srcLength uint) int32 {
+    	return ViMove(v.vi, srcSpace, srcOffset, srcWidth, destSpace,
+    destOffset, destWidth, srcLength)
+    }
 
 func ViMove(vi uint32, srcSpace uint16, srcOffset uint, srcWidth, destSpace uint16,
     destOffset uint64, destWidth uint16, srcLength uint) int32 {
@@ -563,6 +724,12 @@ func ViMove(vi uint32, srcSpace uint16, srcOffset uint, srcWidth, destSpace uint
 	}
 	return int32(ret)
 }
+
+func (v *Visa)ViMoveAsync(srcSpace uint16, srcOffset uint, srcWidth, destSpace uint16,
+    destOffset uint64, destWidth uint16, srcLength uint, jobId *uint32) int32 {
+    	return ViMoveAsync(v.vi, srcSpace, srcOffset , srcWidth, destSpace,
+    destOffset, destWidth, srcLength, jobId)
+    }
 
 func ViMoveAsync(vi uint32, srcSpace uint16, srcOffset uint, srcWidth, destSpace uint16,
     destOffset uint64, destWidth uint16, srcLength uint, jobId *uint32) int32 {
@@ -582,6 +749,12 @@ func ViMoveAsync(vi uint32, srcSpace uint16, srcOffset uint, srcWidth, destSpace
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveAsyncEx(srcSpace uint16, srcOffset uint64, srcWidth, destSpace uint16,
+    destOffset uint64, destWidth uint16, srcLength uint, jobId *uint32) int32 {
+    	return ViMoveAsyncEx(v.vi, srcSpace, srcOffset , srcWidth, destSpace,
+    destOffset, destWidth, srcLength, jobId)
+    }
+    
 func ViMoveAsyncEx(vi uint32, srcSpace uint16, srcOffset uint64, srcWidth, destSpace uint16,
     destOffset uint64, destWidth uint16, srcLength uint, jobId *uint32) int32 {
     	ret, _, _ := procViMoveAsyncEx.Call(uintptr(vi), 
@@ -600,6 +773,12 @@ func ViMoveAsyncEx(vi uint32, srcSpace uint16, srcOffset uint64, srcWidth, destS
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveEx(srcSpace uint16, srcOffset uint64, srcWidth, destSpace uint16,
+    destOffset uint64, destWidth uint16, srcLength uint) int32 {
+    	return ViMoveEx(v.vi, srcSpace, srcOffset, srcWidth, destSpace,
+    destOffset, destWidth, srcLength)
+    }
+    
 func ViMoveEx(vi uint32, srcSpace uint16, srcOffset uint64, srcWidth, destSpace uint16,
     destOffset uint64, destWidth uint16, srcLength uint) int32 {
     	ret, _, _ := procViMoveEx.Call(uintptr(vi), 
@@ -617,6 +796,10 @@ func ViMoveEx(vi uint32, srcSpace uint16, srcOffset uint64, srcWidth, destSpace 
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveIn16(space uint16, offset *uint, length uint32, buf16 *uint16) int32 {
+	return ViMoveIn16(v.vi, space, offset, length, buf16)
+}
+
 func ViMoveIn16(vi uint32, space uint16, offset *uint, length uint32, buf16 *uint16) int32 {
 	ret, _, _ := procViMoveIn16.Call(uintptr(vi), 
 		uintptr(space),
@@ -628,6 +811,10 @@ func ViMoveIn16(vi uint32, space uint16, offset *uint, length uint32, buf16 *uin
 		abort("ViMoveIn16", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMoveIn16Ex(space uint16, offset *uint64, length uint32, buf16 *uint16) int32 {
+	return ViMoveIn16Ex(v.vi, space, offset, length, buf16)
 }
 
 func ViMoveIn16Ex(vi uint32, space uint16, offset *uint64, length uint32, buf16 *uint16) int32 {
@@ -643,6 +830,10 @@ func ViMoveIn16Ex(vi uint32, space uint16, offset *uint64, length uint32, buf16 
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveIn32(space uint16, offset *uint, length uint32, buf32 *uint32) int32 {
+	return ViMoveIn32(v.vi, space, offset, length, buf32)
+}
+
 func ViMoveIn32(vi uint32, space uint16, offset *uint, length uint32, buf32 *uint32) int32 {
 	ret, _, _ := procViMoveIn32.Call(uintptr(vi), 
 		uintptr(space),
@@ -654,6 +845,10 @@ func ViMoveIn32(vi uint32, space uint16, offset *uint, length uint32, buf32 *uin
 		abort("ViMoveIn32", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMoveIn32Ex(space uint16, offset *uint64, length uint32, buf32 *uint32) int32 {
+	return ViMoveIn32Ex(v.vi, space, offset, length, buf32)
 }
 
 func ViMoveIn32Ex(vi uint32, space uint16, offset *uint64, length uint32, buf32 *uint32) int32 {
@@ -669,6 +864,10 @@ func ViMoveIn32Ex(vi uint32, space uint16, offset *uint64, length uint32, buf32 
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveIn64(space uint16, offset *uint, length uint32, buf64 *uint64) int32 {
+	return ViMoveIn64(v.vi, space, offset, length, buf64)
+}
+
 func ViMoveIn64(vi uint32, space uint16, offset *uint, length uint32, buf64 *uint64) int32 {
 	ret, _, _ := procViMoveIn64.Call(uintptr(vi), 
 		uintptr(space),
@@ -680,6 +879,10 @@ func ViMoveIn64(vi uint32, space uint16, offset *uint, length uint32, buf64 *uin
 		abort("ViMoveIn64", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMoveIn64Ex(space uint16, offset *uint64, length uint32, buf64 *uint64) int32 {
+	return ViMoveIn64Ex(v.vi, space, offset, length, buf64)
 }
 
 func ViMoveIn64Ex(vi uint32, space uint16, offset *uint64, length uint32, buf64 *uint64) int32 {
@@ -695,6 +898,10 @@ func ViMoveIn64Ex(vi uint32, space uint16, offset *uint64, length uint32, buf64 
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveIn8(space uint16, offset *uint, length uint32, buf8 *uint8) int32 {
+	return ViMoveIn8(v.vi, space, offset, length, buf8)
+}
+
 func ViMoveIn8(vi uint32, space uint16, offset *uint, length uint32, buf8 *uint8) int32 {
 	ret, _, _ := procViMoveIn8.Call(uintptr(vi), 
 		uintptr(space),
@@ -706,6 +913,10 @@ func ViMoveIn8(vi uint32, space uint16, offset *uint, length uint32, buf8 *uint8
 		abort("ViMoveIn8", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMoveIn8Ex(space uint16, offset *uint64, length uint32, buf8 *uint8) int32 {
+	return ViMoveIn8Ex(v.vi, space, offset, length, buf8)
 }
 
 func ViMoveIn8Ex(vi uint32, space uint16, offset *uint64, length uint32, buf8 *uint8) int32 {
@@ -721,6 +932,10 @@ func ViMoveIn8Ex(vi uint32, space uint16, offset *uint64, length uint32, buf8 *u
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveOut16(space uint16, offset *uint, length uint32, buf16 *uint16) int32 {
+	return ViMoveOut16(v.vi, space, offset, length, buf16)
+}
+
 func ViMoveOut16(vi uint32, space uint16, offset *uint, length uint32, buf16 *uint16) int32 {
 	ret, _, _ := procViMoveOut16.Call(uintptr(vi), 
 		uintptr(space),
@@ -732,6 +947,10 @@ func ViMoveOut16(vi uint32, space uint16, offset *uint, length uint32, buf16 *ui
 		abort("ViMoveOut16", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMoveOut16Ex(space uint16, offset *uint64, length uint32, buf16 *uint16) int32 {
+	return ViMoveOut16Ex(v.vi, space, offset, length, buf16)
 }
 
 func ViMoveOut16Ex(vi uint32, space uint16, offset *uint64, length uint32, buf16 *uint16) int32 {
@@ -747,6 +966,10 @@ func ViMoveOut16Ex(vi uint32, space uint16, offset *uint64, length uint32, buf16
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveOut32(space uint16, offset *uint, length uint32, buf32 *uint32) int32 {
+	return ViMoveOut32(v.vi, space, offset, length, buf32)
+}
+
 func ViMoveOut32(vi uint32, space uint16, offset *uint, length uint32, buf32 *uint32) int32 {
 	ret, _, _ := procViMoveOut32.Call(uintptr(vi), 
 		uintptr(space),
@@ -758,6 +981,10 @@ func ViMoveOut32(vi uint32, space uint16, offset *uint, length uint32, buf32 *ui
 		abort("ViMoveOut32", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMoveOut32Ex(space uint16, offset *uint64, length uint32, buf32 *uint32) int32 {
+	return ViMoveOut32Ex(v.vi, space, offset, length, buf32)
 }
 
 func ViMoveOut32Ex(vi uint32, space uint16, offset *uint64, length uint32, buf32 *uint32) int32 {
@@ -773,6 +1000,10 @@ func ViMoveOut32Ex(vi uint32, space uint16, offset *uint64, length uint32, buf32
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveOut64(space uint16, offset *uint, length uint32, buf64 *uint64) int32 {
+	return ViMoveOut64(v.vi, space, offset, length, buf64)
+}
+
 func ViMoveOut64(vi uint32, space uint16, offset *uint, length uint32, buf64 *uint64) int32 {
 	ret, _, _ := procViMoveOut64.Call(uintptr(vi), 
 		uintptr(space),
@@ -784,6 +1015,10 @@ func ViMoveOut64(vi uint32, space uint16, offset *uint, length uint32, buf64 *ui
 		abort("ViMoveOut64", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMoveOut64Ex(space uint16, offset *uint64, length uint32, buf64 *uint64) int32 {
+	return ViMoveOut64Ex(v.vi, space, offset, length, buf64)
 }
 
 func ViMoveOut64Ex(vi uint32, space uint16, offset *uint64, length uint32, buf64 *uint64) int32 {
@@ -799,6 +1034,10 @@ func ViMoveOut64Ex(vi uint32, space uint16, offset *uint64, length uint32, buf64
 	return int32(ret)
 }
 
+func (v *Visa)ViMoveOut8(space uint16, offset *uint, length uint32, buf8 *uint8) int32 {
+	return ViMoveOut8(v.vi, space, offset, length, buf8)
+}
+
 func ViMoveOut8(vi uint32, space uint16, offset *uint, length uint32, buf8 *uint8) int32 {
 	ret, _, _ := procViMoveOut8.Call(uintptr(vi), 
 		uintptr(space),
@@ -810,6 +1049,10 @@ func ViMoveOut8(vi uint32, space uint16, offset *uint, length uint32, buf8 *uint
 		abort("ViMoveOut8", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViMoveOut8Ex(space uint16, offset *uint64, length uint32, buf8 *uint8) int32 {
+	return ViMoveOut8Ex(v.vi, space, offset, length, buf8)
 }
 
 func ViMoveOut8Ex(vi uint32, space uint16, offset *uint64, length uint32, buf8 *uint8) int32 {
@@ -825,6 +1068,10 @@ func ViMoveOut8Ex(vi uint32, space uint16, offset *uint64, length uint32, buf8 *
 	return int32(ret)
 }
 
+func (v *Visa)ViOpen(name string, mode uint32, timeout uint32) int32 {
+	return ViOpen(v.defaultRM, name, mode, timeout, &v.vi)
+}
+
 func ViOpen(sesn uint32, name string, mode uint32, timeout uint32, vi *uint32) int32 {
 	ret, _, _ := procViOpen.Call(uintptr(sesn),
 		strPtr(name),
@@ -837,12 +1084,20 @@ func ViOpen(sesn uint32, name string, mode uint32, timeout uint32, vi *uint32) i
 	return int32(ret)
 }
 
+func (v *Visa)ViOpenDefaultRM() int32 {
+	return ViOpenDefaultRM(&v.defaultRM)
+}
+
 func ViOpenDefaultRM(vi *uint32) int32 {
 	ret, _, _ := procViOpenDefaultRM.Call(intPtr(vi))
 	if int32(ret) < VI_SUCCESS {
 		abort("viOpenDefaultRM", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViOut16(space uint16, offset uint, val16 uint16) int32 {
+	return ViOut16(v.vi, space, offset, val16)
 }
 
 func ViOut16(vi uint32, space uint16, offset uint, val16 uint16) int32 {
@@ -856,6 +1111,10 @@ func ViOut16(vi uint32, space uint16, offset uint, val16 uint16) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViOut16Ex(space uint16, offset uint64, val16 uint16) int32 {
+	return ViOut16Ex(v.vi, space, offset, val16)
+}
+
 func ViOut16Ex(vi uint32, space uint16, offset uint64, val16 uint16) int32 {
 	ret, _, _ := procViOut16Ex.Call(uintptr(vi), 
 		uintptr(space), 
@@ -865,6 +1124,10 @@ func ViOut16Ex(vi uint32, space uint16, offset uint64, val16 uint16) int32 {
 		abort("ViOut16Ex", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViOut32(space uint16, offset uint, val32 uint32) int32 {
+	return ViOut32(v.vi, space, offset, val32)
 }
 
 func ViOut32(vi uint32, space uint16, offset uint, val32 uint32) int32 {
@@ -878,6 +1141,10 @@ func ViOut32(vi uint32, space uint16, offset uint, val32 uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViOut32Ex(space uint16, offset uint64, val32 uint32) int32 {
+	return ViOut32Ex(v.vi, space, offset, val32)
+}
+
 func ViOut32Ex(vi uint32, space uint16, offset uint64, val32 uint32) int32 {
 	ret, _, _ := procViOut32Ex.Call(uintptr(vi), 
 		uintptr(space), 
@@ -887,6 +1154,10 @@ func ViOut32Ex(vi uint32, space uint16, offset uint64, val32 uint32) int32 {
 		abort("ViOut32Ex", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViOut64(space uint16, offset uint, val64 uint64) int32 {
+	return ViOut64(v.vi, space, offset, val64)
 }
 
 func ViOut64(vi uint32, space uint16, offset uint, val64 uint64) int32 {
@@ -900,6 +1171,10 @@ func ViOut64(vi uint32, space uint16, offset uint, val64 uint64) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViOut64Ex(space uint16, offset uint64, val64 uint64) int32 {
+	return ViOut64Ex(v.vi, space, offset, val64)
+}
+
 func ViOut64Ex(vi uint32, space uint16, offset uint64, val64 uint64) int32 {
 	ret, _, _ := procViOut64Ex.Call(uintptr(vi), 
 		uintptr(space), 
@@ -909,6 +1184,10 @@ func ViOut64Ex(vi uint32, space uint16, offset uint64, val64 uint64) int32 {
 		abort("ViOut64Ex", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViOut8(space uint16, offset uint, val8 uint8) int32 {
+	return ViOut8(v.vi, space, offset, val8)
 }
 
 func ViOut8(vi uint32, space uint16, offset uint, val8 uint8) int32 {
@@ -922,6 +1201,10 @@ func ViOut8(vi uint32, space uint16, offset uint, val8 uint8) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViOut8Ex(space uint16, offset uint64, val8 uint8) int32 {
+	return ViOut8Ex(v.vi, space, offset, val8)
+}
+
 func ViOut8Ex(vi uint32, space uint16, offset uint64, val8 uint8) int32 {
 	ret, _, _ := procViOut8Ex.Call(uintptr(vi), 
 		uintptr(space), 
@@ -933,6 +1216,10 @@ func ViOut8Ex(vi uint32, space uint16, offset uint64, val8 uint8) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViParseRsrc(rsrcName string, intfType *uint16, intfNum *uint16) int32 {
+	return ViParseRsrc(v.defaultRM, rsrcName, intfType, intfNum)
+}
+
 func ViParseRsrc(rmSesn uint32, rsrcName string, intfType *uint16, intfNum *uint16) int32 {
 	ret, _, _ := procViParseRsrc.Call(uintptr(rmSesn),
 		strPtr(rsrcName),
@@ -942,6 +1229,12 @@ func ViParseRsrc(rmSesn uint32, rsrcName string, intfType *uint16, intfNum *uint
 		abort("viParseRsrc", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViParseRsrcEx(rsrcName string, intfType *uint16, intfNum *uint16, 
+	rsrcClass, expandedUnaliasedName, aliasIfExists []byte) int32 {
+	return ViParseRsrcEx(v.defaultRM, rsrcName, intfType, intfNum,
+		rsrcClass, expandedUnaliasedName, aliasIfExists)
 }
 
 func ViParseRsrcEx(rmSesn uint32, rsrcName string, intfType *uint16,
@@ -959,10 +1252,18 @@ func ViParseRsrcEx(rmSesn uint32, rsrcName string, intfType *uint16,
 	return int32(ret)
 }
 
+func (v *Visa)ViPeek16(address unsafe.Pointer, val16 *uint16) {
+	ViPeek16(v.vi, address, val16)
+}
+
 func ViPeek16(vi uint32, address unsafe.Pointer, val16 *uint16) {
 	procViPeek16.Call(uintptr(vi),
 		uintptr(address),
 		intPtr(val16))
+}
+
+func (v *Visa)ViPeek32(address unsafe.Pointer, val32 *uint32) {
+	ViPeek32(v.vi, address, val32)
 }
 
 func ViPeek32(vi uint32, address unsafe.Pointer, val32 *uint32) {
@@ -971,10 +1272,18 @@ func ViPeek32(vi uint32, address unsafe.Pointer, val32 *uint32) {
 		intPtr(val32))
 }
 
+func (v *Visa)ViPeek64(address unsafe.Pointer, val64 *uint64) {
+	ViPeek64(v.vi, address, val64)
+}
+
 func ViPeek64(vi uint32, address unsafe.Pointer, val64 *uint64) {
 	procViPeek64.Call(uintptr(vi),
 		uintptr(address),
 		intPtr(val64))
+}
+
+func (v *Visa)ViPeek8(address unsafe.Pointer, val8 *uint8) {
+	ViPeek8(v.vi, address, val8)
 }
 
 func ViPeek8(vi uint32, address unsafe.Pointer, val8 *uint8) {
@@ -983,10 +1292,18 @@ func ViPeek8(vi uint32, address unsafe.Pointer, val8 *uint8) {
 		intPtr(val8))
 }
 
+func (v *Visa)ViPoke16(address unsafe.Pointer, val16 uint16) {
+	ViPoke16(v.vi, address, val16)
+}
+
 func ViPoke16(vi uint32, address unsafe.Pointer, val16 uint16) {
 	_, _, _ = procViPoke16.Call(uintptr(vi),
 		uintptr(address),
 		uintptr(val16))
+}
+
+func (v *Visa)ViPoke32(address unsafe.Pointer, val32 uint32) {
+	ViPoke32(v.vi, address, val32)
 }
 
 func ViPoke32(vi uint32, address unsafe.Pointer, val32 uint32) {
@@ -995,16 +1312,28 @@ func ViPoke32(vi uint32, address unsafe.Pointer, val32 uint32) {
 		uintptr(val32))
 }
 
+func (v *Visa)ViPoke64(address unsafe.Pointer, val64 uint64) {
+	ViPoke64(v.vi, address, val64)
+}
+
 func ViPoke64(vi uint32, address unsafe.Pointer, val64 uint64) {
 	_, _, _ = procViPoke64.Call(uintptr(vi),
 		uintptr(address),
 		intPtr(val64))
 }
 
+func (v *Visa)ViPoke8(address unsafe.Pointer, val8 uint8) {
+	ViPoke8(v.vi, address, val8)
+}
+
 func ViPoke8(vi uint32, address unsafe.Pointer, val8 uint8) {
 	_, _, _ = procViPoke8.Call(uintptr(vi),
 		uintptr(address),
 		uintptr(val8))
+}
+
+func (v *Visa)ViPrintf(writeFmt string, args ...interface{}) int32 {
+	return ViPrintf(v.vi, writeFmt, args...)
 }
 
 func ViPrintf(vi uint32, writeFmt string, args ...interface{}) int32 {
@@ -1018,6 +1347,10 @@ func ViPrintf(vi uint32, writeFmt string, args ...interface{}) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViPxiReserveTriggers(cnt int16, trigBuses, trigLines, failureIndex  *int16) int32 {
+	return ViPxiReserveTriggers(v.vi, cnt, trigBuses, trigLines, failureIndex)
+}
+
 func ViPxiReserveTriggers(vi uint32, cnt int16, trigBuses, trigLines, failureIndex  *int16) int32 {
 	ret, _, _ := procViPxiReserveTriggers.Call(uintptr(vi),
 		uintptr(cnt),
@@ -1028,6 +1361,10 @@ func ViPxiReserveTriggers(vi uint32, cnt int16, trigBuses, trigLines, failureInd
 		abort("ViPxiReserveTriggers", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViQueryf(cmd string, go_readFmt string, args ...interface{}) int32 {
+	return ViQueryf(v.vi, cmd, go_readFmt, args...)
 }
 
 func ViQueryf(vi uint32, cmd string, go_readFmt string, args ...interface{}) int32 {
@@ -1049,6 +1386,10 @@ func ViQueryf(vi uint32, cmd string, go_readFmt string, args ...interface{}) int
 	return int32(ret)
 }
 
+func (v *Visa)ViRead(buf []byte, cnt uint32, retCnt *uint32) int32 {
+	return ViRead(v.vi, buf, cnt, retCnt)
+}
+
 func ViRead(vi uint32, buf []byte, cnt uint32, retCnt *uint32) int32 {
 	ret, _, _ := procViRead.Call(uintptr(vi),
 		slicePtr(buf),
@@ -1058,6 +1399,10 @@ func ViRead(vi uint32, buf []byte, cnt uint32, retCnt *uint32) int32 {
 		abort("viRead", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViReadAsync(buf []byte, cnt uint32, jobId *uint32) int32 {
+	return ViReadAsync(v.vi, buf, cnt, jobId)
 }
 
 func ViReadAsync(vi uint32, buf []byte, cnt uint32, jobId *uint32) int32 {
@@ -1071,6 +1416,10 @@ func ViReadAsync(vi uint32, buf []byte, cnt uint32, jobId *uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViReadSTB(status *uint16) int32 {
+	return ViReadSTB(v.vi, status)
+}
+
 func ViReadSTB(vi uint32, status *uint16) int32 {
 	ret, _, _ := procViReadSTB.Call(uintptr(vi),
 		intPtr(status))
@@ -1078,6 +1427,10 @@ func ViReadSTB(vi uint32, status *uint16) int32 {
 		abort("ViReadSTB", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViReadToFile(filename string, cnt uint32, retCnt *uint32) int32 {
+	return ViReadToFile(v.vi, filename, cnt, retCnt)
 }
 
 func ViReadToFile(vi uint32, filename string, cnt uint32, retCnt *uint32) int32 {
@@ -1089,6 +1442,10 @@ func ViReadToFile(vi uint32, filename string, cnt uint32, retCnt *uint32) int32 
 		abort("ViReadToFile", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViSPrintf(buf *string, writeFmt string, args ...interface{}) int32 {
+	return ViSPrintf(v.vi, buf, writeFmt, args...)
 }
 
 func ViSPrintf(vi uint32, buf *string, writeFmt string, args ...interface{}) int32 {
@@ -1104,8 +1461,12 @@ func ViSPrintf(vi uint32, buf *string, writeFmt string, args ...interface{}) int
 	
 	// Don't use the vi
 	_ = vi
-	*buf = fmt.Sprintf(writeFmt, args)
+	*buf = fmt.Sprintf(writeFmt, args...)
 	return VI_SUCCESS
+}
+
+func (v *Visa)ViSScanf(buf *string, readFmt string, args ...interface{}) int32 {
+	return ViSScanf(v.vi, buf, readFmt, args...)
 }
 
 func ViSScanf(vi uint32, buf *string, readFmt string, args ...interface{}) int32 {
@@ -1116,6 +1477,10 @@ func ViSScanf(vi uint32, buf *string, readFmt string, args ...interface{}) int32
 		panic("ViSScanf Failed. Error Msg: " + err.Error())
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViScanf(readFmt string, args ...interface{}) int32 {
+	return ViScanf(v.vi, readFmt, args...)
 }
 
 func ViScanf(vi uint32, readFmt string, args ...interface{}) int32 {
@@ -1135,6 +1500,10 @@ func ViScanf(vi uint32, readFmt string, args ...interface{}) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViSetAttribute(attrName uint32, attrValue uint32) int32 {
+	return ViSetAttribute(v.vi, attrName, attrValue) 
+}
+
 func ViSetAttribute(vi uint32, attrName uint32, attrValue uint32) int32 {
 	ret, _, _ := procViSetAttribute.Call(uintptr(vi),
 		uintptr(attrName),
@@ -1143,6 +1512,10 @@ func ViSetAttribute(vi uint32, attrName uint32, attrValue uint32) int32 {
 		abort("viSetAttribute", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViSetBuf(mask uint16, size uint32) int32 {
+	return ViSetBuf(v.vi, mask, size)
 }
 
 func ViSetBuf(vi uint32, mask uint16, size uint32) int32 {
@@ -1155,6 +1528,10 @@ func ViSetBuf(vi uint32, mask uint16, size uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViStatusDesc(status int32, desc []byte) int32 {
+	return ViStatusDesc(v.vi, status, desc)
+}
+
 func ViStatusDesc(vi uint32, status int32, desc []byte) int32 {
 	ret, _, _ := procViStatusDesc.Call(uintptr(vi),
 		uintptr(status),
@@ -1165,6 +1542,10 @@ func ViStatusDesc(vi uint32, status int32, desc []byte) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViTerminate(degree uint16, jobId uint32) int32 {
+	return ViTerminate(v.vi, degree, jobId)
+}
+
 func ViTerminate(vi uint32, degree uint16, jobId uint32) int32 {
 	ret, _, _ := procViTerminate.Call(uintptr(vi),
 		uintptr(degree),
@@ -1173,6 +1554,10 @@ func ViTerminate(vi uint32, degree uint16, jobId uint32) int32 {
 		abort("ViTerminate", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViUninstallHandler(eventType uint32, handler *int32, userHandle unsafe.Pointer) int32 {
+	return ViUninstallHandler(v.vi, eventType, handler, userHandle)
 }
 
 func ViUninstallHandler(vi, eventType uint32, handler *int32, userHandle unsafe.Pointer) int32 {
@@ -1186,12 +1571,20 @@ func ViUninstallHandler(vi, eventType uint32, handler *int32, userHandle unsafe.
 	return int32(ret)
 }
 
+func (v *Visa)ViUnlock() int32 {
+	return ViUnlock(v.vi)
+}
+
 func ViUnlock(vi uint32) int32 {
 	ret, _, _ := procViUnlock.Call(uintptr(vi))
 	if int32(ret) < VI_SUCCESS {
 		abort("ViUnlock", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViUnmapAddress() int32 {
+	return ViUnmapAddress(v.vi)
 }
 
 func ViUnmapAddress(vi uint32) int32 {
@@ -1202,6 +1595,10 @@ func ViUnmapAddress(vi uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViUnmapTrigger(trigSrc, trigDest int16) int32 {
+	return ViUnmapTrigger(v.vi, trigSrc, trigDest)
+}
+
 func ViUnmapTrigger(vi uint32, trigSrc, trigDest int16) int32 {
 	ret, _, _ := procViUnmapTrigger.Call(uintptr(vi), uintptr(trigSrc), uintptr(trigDest))
 	if int32(ret) < VI_SUCCESS {
@@ -1209,6 +1606,11 @@ func ViUnmapTrigger(vi uint32, trigSrc, trigDest int16) int32 {
 	}
 	return int32(ret)
 }
+
+func (v *Visa)ViUsbControlIn(bmRequestType, bRequest int16, wValue, wIndex, wLength uint16, 
+	buf []byte, retCnt *uint16) int32 {
+		return ViUsbControlIn(v.vi, bmRequestType, bRequest, wValue, wIndex, wLength, buf, retCnt)
+	}
 
 func ViUsbControlIn(vi uint32, bmRequestType, bRequest int16, wValue, wIndex, wLength uint16, 
 	buf []byte, retCnt *uint16) int32 {
@@ -1218,6 +1620,10 @@ func ViUsbControlIn(vi uint32, bmRequestType, bRequest int16, wValue, wIndex, wL
 		abort("ViUsbControlIn", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViUsbControlOut(bmRequestType, bRequest int16, wValue, wIndex, wLength uint16, buf string) int32 {
+	return ViUsbControlOut(v.vi, bmRequestType, bRequest, wValue, wIndex, wLength, buf)
 }
 
 func ViUsbControlOut(vi uint32, bmRequestType, bRequest int16, wValue, wIndex, wLength uint16, buf string) int32 {
@@ -1242,6 +1648,10 @@ func ViUsbControlOut(vi uint32, bmRequestType, bRequest int16, wValue, wIndex, w
 //}
 //
 // Need to verify
+func (v *Visa)ViVScanf(readFmt string, params []interface{}) int32 {
+	return ViVScanf(v.vi, readFmt, params)
+}
+
 func ViVScanf(vi uint32, readFmt string, params []interface{}) int32 {
 	ret, _, _ := procViVScanf.Call(uintptr(vi),
 		strPtr(readFmt),
@@ -1250,6 +1660,10 @@ func ViVScanf(vi uint32, readFmt string, params []interface{}) int32 {
 		abort("ViVScanf", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViVxiCommandQuery(mode uint16, cmd uint32, response *uint32) int32 {
+	return ViVxiCommandQuery(v.vi, mode, cmd, response)
 }
 
 func ViVxiCommandQuery(vi uint32, mode uint16, cmd uint32, response *uint32) int32 {
@@ -1261,6 +1675,10 @@ func ViVxiCommandQuery(vi uint32, mode uint16, cmd uint32, response *uint32) int
 		abort("ViVxiCommandQuery", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViWaitOnEvent(inEventType, timeout uint32, outEventType, outContext *uint32) int32 {
+	return ViWaitOnEvent(v.vi, inEventType, timeout, outEventType, outContext)
 }
 
 func ViWaitOnEvent(vi, inEventType, timeout uint32, outEventType, outContext *uint32) int32 {
@@ -1275,6 +1693,10 @@ func ViWaitOnEvent(vi, inEventType, timeout uint32, outEventType, outContext *ui
 	return int32(ret)
 }
 
+func (v *Visa)ViWrite(buf string, cnt uint32, retCnt *uint32) int32 {
+	return ViWrite(v.vi, buf, cnt, retCnt)
+}
+
 func ViWrite(vi uint32, buf string, cnt uint32, retCnt *uint32) int32 {
 	ret, _, _ := procViWrite.Call(uintptr(vi),
 		strPtr(buf),
@@ -1286,6 +1708,9 @@ func ViWrite(vi uint32, buf string, cnt uint32, retCnt *uint32) int32 {
 	return int32(ret)
 }
 
+func (v *Visa)ViWriteAsync(buf string, cnt uint32, jobId *uint32) int32 {
+	return ViWriteAsync(v.vi, buf, cnt, jobId)
+}
 
 func ViWriteAsync(vi uint32, buf string, cnt uint32, jobId *uint32) int32 {
 	ret, _, _ := procViWriteAsync.Call(uintptr(vi),
@@ -1296,6 +1721,10 @@ func ViWriteAsync(vi uint32, buf string, cnt uint32, jobId *uint32) int32 {
 		abort("ViWriteAsync", uint(ret))
 	}
 	return int32(ret)
+}
+
+func (v *Visa)ViWriteFromFile(filename string, cnt uint32, retCnt *uint32) int32 {
+	return ViWriteFromFile(v.vi, filename, cnt, retCnt)
 }
 
 func ViWriteFromFile(vi uint32, filename string, cnt uint32, retCnt *uint32) int32 {
